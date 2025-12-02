@@ -1,0 +1,3 @@
+{"ts": "2025-11-27T16:34:10.980855Z", "step": "start", "cmd": "decide_and_execute", "exit": 0, "stdout": "platform=windows", "stderr": ""}
+{"ts": "2025-11-27T16:34:11.012277Z", "step": "detect-openssl-cli", "cmd": "openssl not found", "exit": 254, "stdout": "", "stderr": "openssl not in PATH"}
+{"ts": "2025-11-27T16:34:11.307307Z", "step": "detect-package-managers", "cmd": "detected", "exit": 0, "stdout": "winget", "stderr": ""}

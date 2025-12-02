@@ -1,0 +1,7 @@
+{"ts": "2025-11-27T16:39:38.503079Z", "step": "start", "cmd": "decide_and_execute", "exit": 0, "stdout": "platform=windows", "stderr": ""}
+{"ts": "2025-11-27T16:39:38.631984Z", "step": "detect-openssl-cli", "cmd": "openssl not found", "exit": 254, "stdout": "", "stderr": "openssl not in PATH"}
+{"ts": "2025-11-27T16:39:38.928665Z", "step": "detect-package-managers", "cmd": "detected", "exit": 0, "stdout": "winget", "stderr": ""}
+{"ts": "2025-11-27T16:39:41.162156Z", "step": "backup", "cmd": "created backups\\20251127T163938Z.tar.gz", "exit": 0, "stdout": "", "stderr": ""}
+{"ts": "2025-11-27T16:39:41.169268Z", "step": "strategy", "cmd": "chosen", "exit": 0, "stdout": "{\"type\": \"side-install\", \"reason\": \"no known package manager that provides target version; using side-install\"}", "stderr": ""}
+{"ts": "2025-11-27T16:39:41.169268Z", "step": "dry-run", "cmd": "planned-actions", "exit": 0, "stdout": "Would run strategy: {'type': 'side-install', 'reason': 'no known package manager that provides target version; using side-install'}", "stderr": ""}
+{"ts": "2025-11-27T16:39:41.724933Z", "step": "generate-readme", "cmd": "write logs\\20251127T163938Z\\README.md", "exit": 0, "stdout": "", "stderr": ""}
