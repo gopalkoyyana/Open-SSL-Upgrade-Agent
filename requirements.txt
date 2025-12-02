@@ -1,0 +1,23 @@
+# Requirements for OpenSSL Upgrade Agent
+
+# Core dependencies (currently none - uses Python standard library only)
+# The script is designed to work with Python 3.6+ standard library
+
+# Development dependencies (optional)
+# Uncomment these if you want to contribute to development:
+
+# Code quality
+# flake8>=6.0.0
+# pylint>=2.17.0
+# black>=23.0.0
+
+# Testing
+# pytest>=7.3.0
+# pytest-cov>=4.1.0
+
+# Documentation
+# sphinx>=6.0.0
+# sphinx-rtd-theme>=1.2.0
+
+# Note: This project intentionally minimizes external dependencies
+# to ensure maximum compatibility and ease of deployment.
