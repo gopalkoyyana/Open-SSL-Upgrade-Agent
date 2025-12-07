@@ -13,6 +13,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Interactive mode improvements
 - Package manager integration for automatic updates
 
+## [1.1.0] - 2025-12-07
+
+### Added
+- **Critical Security Feature**: Automatic vulnerability checking before any download or upgrade
+  - Integrates with OSV.dev API to check for known vulnerabilities
+  - Displays detailed vulnerability information including severity levels
+  - **Automatically aborts** if critical or high severity vulnerabilities are detected
+  - Shows warnings for medium/low severity issues but allows proceeding
+  - Works for both regular upgrades and dry-runs
+- Added `requests` library as a dependency for API communication
+- Comprehensive documentation of the vulnerability check feature in README
+
+### Changed
+- Updated installation instructions to include dependency installation
+- Enhanced security posture by preventing installation of known vulnerable versions
+
+### Security
+- Prevents installation of OpenSSL versions with critical or high severity vulnerabilities
+- Provides direct links to vulnerability details for user review
+- Cannot be bypassed without modifying source code (by design)
+
 ## [1.0.0] - 2025-12-02
 
 ### Added
@@ -56,5 +77,7 @@ This is the first stable release of the OpenSSL Upgrade Agent. The tool has been
 
 ---
 
-[Unreleased]: https://github.com/gopalkoyyana/Open-SSL-Upgrade-Agent/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/gopalkoyyana/Open-SSL-Upgrade-Agent/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/gopalkoyyana/Open-SSL-Upgrade-Agent/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/gopalkoyyana/Open-SSL-Upgrade-Agent/releases/tag/v1.0.0
+

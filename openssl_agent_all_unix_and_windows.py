@@ -33,6 +33,11 @@ import pathlib
 import re
 from typing import Dict, Any, List, Optional
 
+try:
+    import requests
+except ImportError:
+    requests = None
+
 # --------------------------- Utilities ---------------------------
 
 def run_cmd(cmd: List[str], cwd: Optional[str] = None, sudo: bool = False, shell: bool = False) -> Dict[str, Any]:
@@ -58,6 +63,179 @@ def sha256_of_file(path: str) -> str:
         for chunk in iter(lambda: f.read(8192), b''):
             h.update(chunk)
     return h.hexdigest()
+
+
+# --------------------------- Vulnerability Checker ---------------------------
+
+class VulnerabilityChecker:
+    """
+    Checks for known vulnerabilities in OpenSSL versions using the OSV.dev API.
+    """
+    OSV_API_URL = "https://api.osv.dev/v1/query"
+    
+    def __init__(self, version: str):
+        self.version = version
+        self.vulnerabilities = []
+        
+    def check_vulnerabilities(self) -> Dict[str, Any]:
+        """
+        Query OSV.dev API for vulnerabilities in the specified OpenSSL version.
+        Returns a dict with 'found', 'count', 'critical_count', 'high_count', and 'vulnerabilities'.
+        """
+        if requests is None:
+            print("WARNING: 'requests' library not installed. Skipping vulnerability check.")
+            print("Install it with: pip install requests")
+            return {
+                'found': False,
+                'count': 0,
+                'critical_count': 0,
+                'high_count': 0,
+                'vulnerabilities': [],
+                'error': 'requests library not available'
+            }
+        
+        try:
+            # Query OSV.dev for OpenSSL vulnerabilities
+            payload = {
+                "package": {
+                    "name": "openssl",
+                    "ecosystem": "OpenSSL"
+                },
+                "version": self.version
+            }
+            
+            print(f"Checking for vulnerabilities in OpenSSL {self.version}...")
+            response = requests.post(self.OSV_API_URL, json=payload, timeout=10)
+            
+            if response.status_code != 200:
+                return {
+                    'found': False,
+                    'count': 0,
+                    'critical_count': 0,
+                    'high_count': 0,
+                    'vulnerabilities': [],
+                    'error': f'API returned status code {response.status_code}'
+                }
+            
+            data = response.json()
+            vulns = data.get('vulns', [])
+            
+            if not vulns:
+                print(f"✓ No known vulnerabilities found for OpenSSL {self.version}")
+                return {
+                    'found': False,
+                    'count': 0,
+                    'critical_count': 0,
+                    'high_count': 0,
+                    'vulnerabilities': []
+                }
+            
+            # Process vulnerabilities
+            critical_count = 0
+            high_count = 0
+            processed_vulns = []
+            
+            for vuln in vulns:
+                vuln_id = vuln.get('id', 'UNKNOWN')
+                summary = vuln.get('summary', 'No summary available')
+                severity = self._extract_severity(vuln)
+                
+                processed_vulns.append({
+                    'id': vuln_id,
+                    'summary': summary,
+                    'severity': severity,
+                    'details_url': vuln.get('database_specific', {}).get('url', f"https://osv.dev/vulnerability/{vuln_id}")
+                })
+                
+                if severity == 'CRITICAL':
+                    critical_count += 1
+                elif severity == 'HIGH':
+                    high_count += 1
+            
+            self.vulnerabilities = processed_vulns
+            
+            return {
+                'found': True,
+                'count': len(vulns),
+                'critical_count': critical_count,
+                'high_count': high_count,
+                'vulnerabilities': processed_vulns
+            }
+            
+        except requests.exceptions.Timeout:
+            return {
+                'found': False,
+                'count': 0,
+                'critical_count': 0,
+                'high_count': 0,
+                'vulnerabilities': [],
+                'error': 'Request timeout'
+            }
+        except Exception as e:
+            return {
+                'found': False,
+                'count': 0,
+                'critical_count': 0,
+                'high_count': 0,
+                'vulnerabilities': [],
+                'error': str(e)
+            }
+    
+    def _extract_severity(self, vuln: Dict[str, Any]) -> str:
+        """Extract severity from vulnerability data."""
+        # Check database_specific first
+        db_specific = vuln.get('database_specific', {})
+        if 'severity' in db_specific:
+            return db_specific['severity'].upper()
+        
+        # Check severity array
+        severity_list = vuln.get('severity', [])
+        if severity_list:
+            for sev in severity_list:
+                if isinstance(sev, dict):
+                    score = sev.get('score', '')
+                    if 'CRITICAL' in score.upper():
+                        return 'CRITICAL'
+                    elif 'HIGH' in score.upper():
+                        return 'HIGH'
+                    elif 'MEDIUM' in score.upper():
+                        return 'MEDIUM'
+                    elif 'LOW' in score.upper():
+                        return 'LOW'
+        
+        return 'UNKNOWN'
+    
+    def display_vulnerabilities(self, result: Dict[str, Any]):
+        """Display vulnerability information to the user."""
+        if result.get('error'):
+            print(f"⚠ Vulnerability check encountered an error: {result['error']}")
+            return
+        
+        if not result['found']:
+            return
+        
+        print(f"\n{'='*70}")
+        print(f"⚠ WARNING: {result['count']} vulnerabilities found for OpenSSL {self.version}")
+        print(f"{'='*70}")
+        
+        if result['critical_count'] > 0:
+            print(f"  CRITICAL: {result['critical_count']}")
+        if result['high_count'] > 0:
+            print(f"  HIGH: {result['high_count']}")
+        
+        print(f"\nVulnerability Details:")
+        print(f"{'-'*70}")
+        
+        for vuln in result['vulnerabilities'][:5]:  # Show first 5
+            print(f"\n  ID: {vuln['id']}")
+            print(f"  Severity: {vuln['severity']}")
+            print(f"  Summary: {vuln['summary'][:100]}...")
+            print(f"  Details: {vuln['details_url']}")
+        
+        if len(result['vulnerabilities']) > 5:
+            print(f"\n  ... and {len(result['vulnerabilities']) - 5} more vulnerabilities")
+        
+        print(f"\n{'='*70}")
 
 
 # --------------------------- Agent class ---------------------------
@@ -742,6 +920,31 @@ def parse_args():
 
 def main():
     args = parse_args()
+    
+    # Perform vulnerability check BEFORE any download or dry-run
+    print(f"\n{'='*70}")
+    print("SECURITY CHECK: Vulnerability Scan")
+    print(f"{'='*70}\n")
+    
+    checker = VulnerabilityChecker(args.target_version)
+    vuln_result = checker.check_vulnerabilities()
+    
+    # Display vulnerabilities if found
+    if vuln_result['found']:
+        checker.display_vulnerabilities(vuln_result)
+        
+        # Abort if critical or high severity vulnerabilities are found
+        if vuln_result['critical_count'] > 0 or vuln_result['high_count'] > 0:
+            print("\n❌ ABORTING: Critical or high severity vulnerabilities detected!")
+            print(f"   Found {vuln_result['critical_count']} CRITICAL and {vuln_result['high_count']} HIGH severity issues.")
+            print("\n   Recommendation: Choose a different OpenSSL version without known vulnerabilities.")
+            print("   Visit https://www.openssl.org/news/vulnerabilities.html for more information.\n")
+            sys.exit(1)
+        else:
+            print("\n⚠ Vulnerabilities found, but none are critical or high severity.")
+            print("   Proceeding with caution...\n")
+    
+    # If vulnerability check passed or no critical issues, proceed with agent
     agent = OpenSSLAgent(args)
     res = agent.decide_and_execute()
     print('Run complete. Logs & README at:', agent.log_dir)

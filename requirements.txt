@@ -1,7 +1,8 @@
 # Requirements for OpenSSL Upgrade Agent
 
-# Core dependencies (currently none - uses Python standard library only)
-# The script is designed to work with Python 3.6+ standard library
+# Core dependencies
+# Required for vulnerability checking via OSV.dev API
+requests>=2.31.0
 
 # Development dependencies (optional)
 # Uncomment these if you want to contribute to development:

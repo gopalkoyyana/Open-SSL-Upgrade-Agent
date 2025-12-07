@@ -4,6 +4,7 @@ A cross-platform Python agent designed to detect, backup, and upgrade OpenSSL on
 
 ## Features
 
+*   **Vulnerability Check**: Automatically checks for known vulnerabilities in the target OpenSSL version using the OSV.dev API before any download or upgrade. Aborts if critical or high severity vulnerabilities are detected.
 *   **Detection**: Identifies existing OpenSSL installations and package managers.
 *   **Dependency Analysis**: Checks which libraries an application is linked against (using `ldd`, `otool`, etc.).
 *   **Dependency Upgrade**: Identifies and upgrades application dependencies (libraries) using system package managers, with user confirmation. Supports Linux, macOS, Windows, AIX, and Solaris.
@@ -25,7 +26,21 @@ A cross-platform Python agent designed to detect, backup, and upgrade OpenSSL on
 
 ## Installation
 
-No special installation is required. Simply download the script `openssl_agent_all_unix_and_windows.py` to the target machine.
+1. Download the script `openssl_agent_all_unix_and_windows.py` to the target machine.
+
+2. Install required dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Or install the requests library directly:
+
+```bash
+pip install requests
+```
+
+**Note**: The `requests` library is required for the vulnerability check feature. If not installed, the agent will skip the vulnerability check and proceed with a warning.
 
 ## Usage
 
@@ -77,6 +92,51 @@ To run a TLS handshake check against a specific host after upgrade:
 ```bash
 python3 openssl_agent_all_unix_and_windows.py --target-version 3.0.8 --health-url example.com
 ```
+
+## Vulnerability Check
+
+**Important Security Feature**: Before any download or upgrade operation (including dry-runs), the agent automatically checks for known vulnerabilities in the specified OpenSSL version using the [OSV.dev](https://osv.dev) vulnerability database.
+
+### How It Works
+
+1. The agent queries the OSV.dev API for the target OpenSSL version
+2. If vulnerabilities are found, they are displayed with severity levels
+3. **Critical or High severity vulnerabilities will abort the operation**
+4. Medium or Low severity vulnerabilities will display a warning but allow you to proceed
+
+### Example Output
+
+```
+======================================================================
+SECURITY CHECK: Vulnerability Scan
+======================================================================
+
+Checking for vulnerabilities in OpenSSL 3.0.0...
+
+======================================================================
+⚠ WARNING: 5 vulnerabilities found for OpenSSL 3.0.0
+======================================================================
+  CRITICAL: 2
+  HIGH: 1
+
+Vulnerability Details:
+----------------------------------------------------------------------
+
+  ID: CVE-2022-XXXXX
+  Severity: CRITICAL
+  Summary: Buffer overflow in SSL handshake...
+  Details: https://osv.dev/vulnerability/CVE-2022-XXXXX
+
+❌ ABORTING: Critical or high severity vulnerabilities detected!
+   Found 2 CRITICAL and 1 HIGH severity issues.
+
+   Recommendation: Choose a different OpenSSL version without known vulnerabilities.
+   Visit https://www.openssl.org/news/vulnerabilities.html for more information.
+```
+
+### Bypassing the Check
+
+The vulnerability check **cannot be bypassed**. This is a critical security feature designed to prevent you from installing vulnerable versions of OpenSSL. If you need to proceed with a version that has known vulnerabilities, you must modify the source code (not recommended).
 
 ## Command Line Arguments
 
